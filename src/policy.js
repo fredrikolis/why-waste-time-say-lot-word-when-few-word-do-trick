@@ -2,6 +2,7 @@
 import { measure } from './measure.js';
 import { bounds as loadBounds } from './config.js';
 import { breaches } from './breach.js';
+import { isBound } from './event.js';
 
 /**
  * @typedef {{ reminder: string, offense: string | null, clearsPending?: boolean }} Reminder
@@ -21,6 +22,8 @@ export function decide(event, bounds = loadBounds(), redacted = null, interactiv
   if (event.kind === 'session-start') {
     return { reminder: BASELINE, offense: null };
   }
+
+  if (!isBound(event)) return null;
 
   // Chat warnings only where a human is reading: a Stop warning continues the run, so a
   // programmatic caller would get a rewrite it never asked for at twice the tokens. A

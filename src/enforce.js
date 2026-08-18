@@ -1,9 +1,10 @@
-// Concern: buffers a streaming message, redacts one over the bounds, and keeps the per-session record of that | Non-concern: what the agent is told, policy.js owns it | IO: (delta) -> notice; tmp files
+// Concern: buffers a streaming message, redacts one over the bounds, and keeps the per-session record | Non-concern: what the agent is told, policy.js owns it | IO: (delta) -> notice; tmp files
 import { mkdir, readFile, writeFile, appendFile, rm, readdir, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { measure } from './measure.js';
 import { breaches } from './breach.js';
+import { isBound } from './event.js';
 import { NAME } from './tool.js';
 
 // Overridable so a test run never shares state with a live session, and never leaves records
@@ -69,6 +70,7 @@ async function sweep() {
  */
 export async function display(event, bounds, interactive = true) {
   if (bounds.chatEnforcement !== 'redact' || !interactive) return null;
+  if (!isBound(event)) return null;
   if (!event.messageId) throw new TypeError('MessageDisplay payload carries no message_id');
 
   await mkdir(DIR, { recursive: true });

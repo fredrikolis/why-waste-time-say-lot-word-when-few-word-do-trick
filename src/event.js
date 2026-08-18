@@ -1,4 +1,4 @@
-// Concern: normalizes a host's hook payload into the canonical Event, its kind included | Non-concern: whether an Event is worth a reminder | IO: (host json) -> Event
+// Concern: normalizes a host's hook payload into the canonical Event, its kind and whether it is bound | Non-concern: which reminder it earns, policy.js decides | IO: (host json) -> Event
 /**
  * @typedef {'session-start' | 'prompt' | 'stop' | 'file-write' | 'display' | 'pre-tool' | 'other'} EventKind
  * @typedef {{
@@ -7,6 +7,7 @@
  *   text: string,
  *   filePath: string | null,
  *   stopHookActive: boolean,
+ *   agentId: string | null,
  *   messageId: string,
  *   delta: string,
  *   final: boolean,
@@ -50,6 +51,14 @@ function classify(raw) {
 }
 
 /**
+ * A subagent's chat is reasoning the parent summarises, so it is not bound. What it writes to
+ * disk is read by people like anything else, so that is.
+ *
+ * @param {Event} event
+ */
+export const isBound = (event) => !event.agentId || event.kind === 'file-write';
+
+/**
  * @param {unknown} payload
  * @returns {Event}
  */
@@ -71,6 +80,7 @@ export function normalize(payload) {
           : (raw.prompt ?? ''),
     filePath: raw.tool_input?.file_path ?? null,
     stopHookActive: raw.stop_hook_active === true,
+    agentId: raw.agent_id ?? null,
     messageId: raw.message_id ?? '',
     delta: raw.delta ?? '',
     final: raw.final === true,
