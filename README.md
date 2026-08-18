@@ -1,10 +1,10 @@
 <!-- Concern: sells the tool and shows how to install it | Non-concern: the rule text, the flag surface, and the bounds | IO: none -->
 
-# why-waste-time-say-lot-word-when-few-word-do-trick
+[why-waste-time-say-lot-word-when-few-word-do-trick](https://i.giphy.com/DMNPDvtGTD9WLK2Xxa.webp)
 
 [![npm](https://img.shields.io/npm/v/why-waste-time-say-lot-word-when-few-word-do-trick.svg)](https://www.npmjs.com/package/why-waste-time-say-lot-word-when-few-word-do-trick)
 
-Tells your coding agent to be terse, then measures whether it was.
+A CLI-tool + agent hook that reminds Claude to be terse, and reminds it when it's not.
 
 **What your agent should say:**
 
