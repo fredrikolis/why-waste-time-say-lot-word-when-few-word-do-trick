@@ -1,0 +1,31 @@
+# Concern: publishes a tagged version to npm over OIDC, gated on a green suite | Non-concern: the per-push gate | IO: (release published) -> npm package
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm test
+
+      # Trusted publishing needs npm >= 11.5.1; pnpm has no OIDC support yet (pnpm/pnpm#9812).
+      - run: npm install -g npm@latest
+      - run: npm publish --provenance --access public

@@ -1,0 +1,1 @@
+Concern: turns on type checking of the JSDoc annotations in plain JS | Non-concern: emitting anything, since there is no build step | IO: none

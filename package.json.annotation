@@ -1,0 +1,1 @@
+Concern: declares the package identity, its bin entry, and the dev toolchain | Non-concern: the runtime bounds, which config.js owns | IO: none

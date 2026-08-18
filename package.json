@@ -1,0 +1,49 @@
+{
+  "name": "why-waste-time-say-lot-word-when-few-word-do-trick",
+  "version": "0.0.1",
+  "description": "Keeps coding agents concise by re-asserting concision rules from the package, not from per-host config.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "why-waste-time-say-lot-word-when-few-word-do-trick": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "rules"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "check": "tsc --noEmit",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fredrikolis/why-waste-time-say-lot-word-when-few-word-do-trick.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fredrikolis/why-waste-time-say-lot-word-when-few-word-do-trick/issues"
+  },
+  "homepage": "https://github.com/fredrikolis/why-waste-time-say-lot-word-when-few-word-do-trick#readme",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "agent",
+    "hooks",
+    "concision",
+    "prompt"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

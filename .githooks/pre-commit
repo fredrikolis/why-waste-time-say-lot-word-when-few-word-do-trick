@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Concern: blocks a commit whose files lack a parseable first-line annotation | Non-concern: whether an annotation is true | IO: (staged tree) -> exit code
+set -euo pipefail
+
+if ! command -v annotated-tree >/dev/null 2>&1; then
+  echo "pre-commit: annotated-tree not installed, skipping the annotation lint." >&2
+  echo "  install it with: cargo install annotated-tree" >&2
+  echo "  the commit-msg 'annotations' gate still reviews this diff." >&2
+  exit 0
+fi
+
+annotated-tree --strict-check . --hidden -I "pnpm-lock.yaml" --max-length 200
+annotated-tree --strict-check . --hidden --include-tests -I "pnpm-lock.yaml" --max-length 200
