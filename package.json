@@ -1,6 +1,6 @@
 {
   "name": "why-waste-time-say-lot-word-when-few-word-do-trick",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Keeps coding agents concise by re-asserting concision rules from the package, not from per-host config.",
   "type": "module",
   "license": "MIT",

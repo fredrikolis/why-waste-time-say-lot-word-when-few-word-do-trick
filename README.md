@@ -30,7 +30,7 @@ like me to elaborate on any part of this!
 
 ```bash
 npm i -g why-waste-time-say-lot-word-when-few-word-do-trick
-why-waste-time-say-lot-word-when-few-word-do-trick install
+why-waste-time-say-lot-word-when-few-word-do-trick install-agent-hook claude
 ```
 
 ## What it does
@@ -40,5 +40,5 @@ why-waste-time-say-lot-word-when-few-word-do-trick install
 
 Nothing else. Silent while the agent behaves.
 
-Bounds are configurable and `uninstall` backs it out.
+Bounds are configurable. `uninstall-agent-hook claude --confirm` backs it out.
 Run `why-waste-time-say-lot-word-when-few-word-do-trick --help` for the whole surface.

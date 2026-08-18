@@ -1,4 +1,4 @@
-// Concern: freezes that installing twice leaves one registration per event and a parseable settings file | Non-concern: the envelope shape | IO: none
+// Concern: freezes what install and uninstall do to a settings file | Non-concern: the argv surface that reaches them, which cli.test.js owns | IO: none
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';

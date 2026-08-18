@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { normalize } from '../src/event.js';
 import { decide, BASELINE } from '../src/policy.js';
 import { render } from '../src/render.js';
-import * as claude from '../src/hosts/claude.js';
+import { hostFor, AGENTS } from '../src/hosts/index.js';
 import { NAME } from '../src/tool.js';
 import { DEFAULTS, configPath } from '../src/config.js';
 
@@ -18,24 +18,30 @@ DESCRIPTION:
   is an install, never a per-host config edit.
 
 VERBS:
-  install [settings.json]   Register the hooks. Defaults to ~/.claude/settings.json;
-                            pass a path for a repo-local .claude/settings.json.
-                            Backs up first. Idempotent.
-  uninstall [settings.json] Remove the hooks this tool registered. Previews by
+  install-agent-hook <agent>
+                            Register the hooks for <agent>. Backs up first. Idempotent.
+  uninstall-agent-hook <agent>
+                            Remove the hooks this tool registered. Previews by
                             default; pass --confirm to apply. Backs up first.
-  remind                    Read a hook payload on stdin, write the reminder. Hooks call this.
+  remind <agent>            Read a hook payload on stdin, write the reminder. Hooks call this.
   print                     Write the rule text to stdout, for hosts with no installer.
 
+AGENTS:
+  ${AGENTS.join(', ')}
+
 FLAGS:
-  --confirm                 Apply a change 'uninstall' would otherwise only preview
+  --settings <path>         Settings file to edit, for a repo-local install.
+                            Defaults to the agent's own global settings file.
+  --confirm                 Apply a change 'uninstall-agent-hook' would otherwise
+                            only preview
   --version, -V             Version as JSON
   --help                    This text
 
 EXAMPLES:
-  ${NAME} install
-  ${NAME} install .claude/settings.json
-  ${NAME} uninstall
-  ${NAME} uninstall --confirm
+  ${NAME} install-agent-hook claude
+  ${NAME} install-agent-hook claude --settings .claude/settings.json
+  ${NAME} uninstall-agent-hook claude
+  ${NAME} uninstall-agent-hook claude --confirm
   ${NAME} print >> AGENTS.md
 
 OUTPUT:
@@ -82,8 +88,38 @@ async function readStdin() {
 /** A backup name no later run reuses. */
 const stamp = () => new Date().toISOString().replace(/[:.]/g, '-');
 
-/** @param {string[]} argv */
-const target = (argv) => argv.slice(1).find((a) => !a.startsWith('--')) ?? claude.settingsPath();
+/** Flags that take a value, so their value is never mistaken for a positional. */
+const VALUED = new Set(['--settings']);
+
+/**
+ * @param {string[]} argv
+ * @returns {{ positional: string[], flags: Record<string, string> }}
+ */
+function parse(argv) {
+  const positional = [];
+  /** @type {Record<string, string>} */
+  const flags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (!arg.startsWith('--')) {
+      positional.push(arg);
+    } else if (VALUED.has(arg)) {
+      const value = argv[++i];
+      if (!value) throw new RangeError(`${arg} needs a value`);
+      flags[arg] = value;
+    } else {
+      flags[arg] = '';
+    }
+  }
+  return { positional, flags };
+}
+
+/** @param {string[]} positional */
+function agentIn(positional) {
+  const agent = positional[1];
+  if (!agent) throw new RangeError(`name an agent: ${AGENTS.join(', ')}`);
+  return hostFor(agent);
+}
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -96,17 +132,22 @@ async function main() {
     return { out: null, code: 0 };
   }
 
-  switch (argv[0]) {
-    case 'install':
-      return { out: ok(await claude.install(target(argv), stamp())), code: 0 };
+  const { positional, flags } = parse(argv);
 
-    case 'uninstall': {
-      const path = target(argv);
-      if (!argv.includes('--confirm')) {
-        const would = await claude.pending(path);
-        return { out: ok({ path, preview: true, wouldRemove: would }), code: 0 };
+  switch (positional[0]) {
+    case 'install-agent-hook': {
+      const host = agentIn(positional);
+      const path = flags['--settings'] ?? host.settingsPath();
+      return { out: ok(await host.install(path, stamp())), code: 0 };
+    }
+
+    case 'uninstall-agent-hook': {
+      const host = agentIn(positional);
+      const path = flags['--settings'] ?? host.settingsPath();
+      if (!('--confirm' in flags)) {
+        return { out: ok({ path, preview: true, wouldRemove: await host.pending(path) }), code: 0 };
       }
-      return { out: ok(await claude.uninstall(path, stamp())), code: 0 };
+      return { out: ok(await host.uninstall(path, stamp())), code: 0 };
     }
 
     case 'print':
@@ -116,9 +157,10 @@ async function main() {
     case 'remind': {
       // A hook must never block a session: every failure here is silent, exit 0.
       try {
+        const host = agentIn(positional);
         const event = normalize(JSON.parse(await readStdin()));
         const verdict = decide(event);
-        if (verdict) process.stdout.write(claude.envelope(render(verdict), event));
+        if (verdict) process.stdout.write(host.envelope(render(verdict), event));
       } catch (cause) {
         process.stderr.write(`${NAME}: ${cause instanceof Error ? cause.message : cause}\n`);
       }
@@ -126,14 +168,19 @@ async function main() {
     }
 
     default:
-      return { out: err('bad_arguments', `unknown verb: ${argv[0]}`), code: 2 };
+      return { out: err('bad_arguments', `unknown verb: ${positional[0]}`), code: 2 };
   }
 }
 
-/** A settings file we cannot parse is the user's input, not our bug: report it, never a stack. */
-const { out, code } = await main().catch((cause) => ({
-  out: err('validation_error', cause instanceof Error ? cause.message : String(cause)),
-  code: 3,
-}));
+/**
+ * A bad argument is usage (exit 2); a settings file we cannot parse is validation (exit 3).
+ * Neither is our bug, so neither prints a stack.
+ */
+const { out, code } = await main().catch((cause) => {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return cause instanceof RangeError
+    ? { out: err('bad_arguments', message), code: 2 }
+    : { out: err('validation_error', message), code: 3 };
+});
 if (out) process.stdout.write(`${out}\n`);
 process.exit(code);

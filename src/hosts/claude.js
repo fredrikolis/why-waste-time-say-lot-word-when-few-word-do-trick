@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { NAME } from '../tool.js';
 
-const COMMAND = `${NAME} remind`;
+const COMMAND = `${NAME} remind claude`;
 
 /** @type {{ event: string, matcher: string | null }[]} */
 const REGISTRATIONS = [

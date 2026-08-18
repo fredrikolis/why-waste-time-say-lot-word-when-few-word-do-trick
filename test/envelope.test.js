@@ -11,7 +11,8 @@ const env = { ...process.env, [`${NAME.toUpperCase().replace(/-/g, '_')}_CONFIG`
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 
 /** @param {object} payload */
-const remind = (payload) => execFileSync(CLI, ['remind'], { input: JSON.stringify(payload), encoding: 'utf8', env });
+const remind = (payload) =>
+  execFileSync(CLI, ['remind', 'claude'], { input: JSON.stringify(payload), encoding: 'utf8', env });
 
 test('SessionStart emits additionalContext under hookSpecificOutput', () => {
   const out = JSON.parse(remind({ hook_event_name: 'SessionStart', session_id: 's1' }));
@@ -44,7 +45,12 @@ test('an event with no reminder emits nothing', () => {
 
 test('a malformed payload never blocks the session', () => {
   assert.equal(
-    execFileSync(CLI, ['remind'], { input: 'not json', encoding: 'utf8', env, stdio: ['pipe', 'pipe', 'ignore'] }),
+    execFileSync(CLI, ['remind', 'claude'], {
+      input: 'not json',
+      encoding: 'utf8',
+      env,
+      stdio: ['pipe', 'pipe', 'ignore'],
+    }),
     '',
   );
 });
