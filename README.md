@@ -1,6 +1,6 @@
 <!-- Concern: sells the tool and shows how to install it | Non-concern: the rule text, the flag surface, and the bounds | IO: none -->
 
-[why-waste-time-say-lot-word-when-few-word-do-trick](https://i.giphy.com/DMNPDvtGTD9WLK2Xxa.webp)
+![why-waste-time-say-lot-word-when-few-word-do-trick](https://i.giphy.com/DMNPDvtGTD9WLK2Xxa.webp)
 
 [![npm](https://img.shields.io/npm/v/why-waste-time-say-lot-word-when-few-word-do-trick.svg)](https://www.npmjs.com/package/why-waste-time-say-lot-word-when-few-word-do-trick)
 
