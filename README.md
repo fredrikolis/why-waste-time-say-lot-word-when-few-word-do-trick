@@ -30,40 +30,30 @@ like me to elaborate on any part of this!
 
 ```bash
 npm i -g why-waste-time-say-lot-word-when-few-word-do-trick
-why-waste-time-say-lot-word-when-few-word-do-trick install-agent-hook claude
 ```
 
-## What it does
-
-1. States [the rules](https://github.com/fredrikolis/why-waste-time-say-lot-word-when-few-word-do-trick/blob/main/rules/session-start-reminder.md) at session start, and after every compact.
-2. Warns it, with the counts, when a response runs long or a markdown write turns into a wall of text.
-
-Nothing else. Silent while the agent behaves.
-
-## Enforcement
-
-Warnings by default. Under `redact`, an over-long chat response never reaches you:
-
-- You see a notice naming the counts that broke.
-- The agent is told to rewrite it, once per session.
-- The agent cannot bypass this. It does not control what is drawn.
-
+Configure limits and make it auto-redact long chat output 
 ```bash
+why-waste-time-say-lot-word-when-few-word-do-trick configure --max-chat-lines 25
+why-waste-time-say-lot-word-when-few-word-do-trick configure --max-chat-paragraph-words 50
 why-waste-time-say-lot-word-when-few-word-do-trick configure --chat-enforcement redact
 ```
 
-**Redaction costs streaming.** Nothing shows until a message is complete and measured.
-
-It applies to interactive sessions only, never to `claude -p`, and never to file writes.
-
-## Configuration
-
+Install Claude hooks (modifies ~/.claude/settings.json)
 ```bash
-why-waste-time-say-lot-word-when-few-word-do-trick configure --response-lines 25
-why-waste-time-say-lot-word-when-few-word-do-trick configure
+why-waste-time-say-lot-word-when-few-word-do-trick install-agent-hook claude
 ```
 
-Only your overrides are stored. Defaults you never set track future releases.
+
+## What the installed hook does
+
+1. Tells the agent to communicate concisely at SessionStart (and PostCompaction)
+2. Auto-rejects long chat responses, forcing the agent to try again.
+3. Warns the agent if it writes lengthy Markdown prose
+ 
+Nothing else. Silent while the agent behaves.
+
+
 
 `uninstall-agent-hook claude --confirm` removes the hooks. It leaves this config file in place.
 Run `--help` for the whole surface.
