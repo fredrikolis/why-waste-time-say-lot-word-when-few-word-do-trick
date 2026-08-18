@@ -5,6 +5,7 @@ git agent-verdict --require-version 1.13
 
 git agent-verdict "$1" core --model opus \
   --standard programming --standard testing --standard cli \
+  --rule "detection counts and nothing else: no word lists, no phrase lists, no style regex, no heuristic scoring prose quality. A diff adding one moves away from this. Judgment belongs in rules/*.md, which the agent reads; the counters only choose when to deliver it" \
   --path .
 
 git agent-verdict "$1" annotations --model opus \
