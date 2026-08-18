@@ -6,6 +6,7 @@ import { decide, BASELINE } from '../src/policy.js';
 import { render } from '../src/render.js';
 import * as claude from '../src/hosts/claude.js';
 import { NAME } from '../src/tool.js';
+import { DEFAULTS, configPath } from '../src/config.js';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
@@ -43,6 +44,12 @@ OUTPUT:
   'print' and 'remind' are the exceptions: they write raw text, because their
   consumers are an instruction file and Claude Code's hook parser, neither of
   which reads this envelope.
+
+CONFIG:
+  ${configPath()}
+${Object.entries(DEFAULTS)
+  .map(([k, v]) => `  ${k.padEnd(24)}  default ${v}`)
+  .join('\n')}
 
 ENVIRONMENT:
   ${NAME.toUpperCase().replace(/-/g, '_')}_CONFIG

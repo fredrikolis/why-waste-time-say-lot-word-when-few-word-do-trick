@@ -9,7 +9,7 @@ import { NAME } from './tool.js';
  */
 
 /** @type {Bounds} */
-const DEFAULTS = {
+export const DEFAULTS = {
   paragraphWords: 70,
   proseRunWords: 200,
   responseLines: 50,
