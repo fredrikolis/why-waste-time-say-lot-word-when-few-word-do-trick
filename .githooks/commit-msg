@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Concern: declares which rubrics each gate reviews this repo's diffs against | Non-concern: the reviewer brief and severity ladder, which git-agent-verdict owns | IO: (commit msg file) -> exit code
+set -euo pipefail
+git agent-verdict --require-version 1.13
+
+git agent-verdict "$1" core --model opus \
+  --standard programming --standard testing --standard cli \
+  --path .
+
+git agent-verdict "$1" annotations --model opus \
+  --rule "every file's first line is a Concern | Non-concern | IO annotation under 200 chars, naming a non-concern an agent would wrongly assume this file owns" \
+  --path .
+
+git agent-verdict "$1" readme --standard human-communication --standard minimal-docs \
+  --path README.md
+
+git agent-verdict "$1" payload --standard agent-communication \
+  --path "rules/*.md"
