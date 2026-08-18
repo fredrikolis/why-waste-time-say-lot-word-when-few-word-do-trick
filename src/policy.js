@@ -1,25 +1,11 @@
-// Concern: decides which reminder an Event earns and writes the offense line stating the counts | Non-concern: tagging that line onto the body, render.js owns it | IO: (Event, Bounds) -> Reminder | null
+// Concern: decides which reminder an Event earns and writes the offense line stating the counts | Non-concern: tagging it onto the body, render.js owns it | IO: (Event) -> Reminder; config file
 import { measure } from './measure.js';
 import { bounds as loadBounds } from './config.js';
+import { breaches } from './breach.js';
 
 /**
- * @typedef {{ reminder: string, offense: string | null }} Reminder
+ * @typedef {{ reminder: string, offense: string | null, clearsPending?: boolean }} Reminder
  */
-
-/**
- * @param {import('./measure.js').Measurement} m
- * @param {import('./config.js').Bounds} b
- */
-function shapeBreaches(m, b) {
-  const found = [];
-  if (m.paragraphWords > b.paragraphWords) {
-    found.push(`longest paragraph ${m.paragraphWords} words (max ${b.paragraphWords})`);
-  }
-  if (m.proseRunWords > b.proseRunWords) {
-    found.push(`longest unbroken prose run ${m.proseRunWords} words (max ${b.proseRunWords})`);
-  }
-  return found;
-}
 
 /** The reminder that states the rules with nothing yet to correct. */
 export const BASELINE = 'session-start-reminder';
@@ -27,18 +13,38 @@ export const BASELINE = 'session-start-reminder';
 /**
  * @param {import('./event.js').Event} event
  * @param {import('./config.js').Bounds} [bounds]
+ * @param {import('./enforce.js').Pending | null} [redacted]
+ * @param {boolean} [interactive]
  * @returns {Reminder | null}
  */
-export function decide(event, bounds = loadBounds()) {
+export function decide(event, bounds = loadBounds(), redacted = null, interactive = true) {
   if (event.kind === 'session-start') {
     return { reminder: BASELINE, offense: null };
+  }
+
+  // Chat warnings only where a human is reading: a Stop warning continues the run, so a
+  // programmatic caller would get a rewrite it never asked for at twice the tokens. A
+  // PostToolUse reminder continues nothing, so it is not gated.
+  if (event.kind === 'stop' && !interactive) return null;
+
+  // A redaction can land on a message that is not the turn's last, so the recorded breach wins
+  // over measuring what happens to be last: otherwise the user loses text and is never told why.
+
+  // Delivered at the first hook that reaches the model: PreToolUse beats Stop whenever the
+  // agent calls a tool next, so it learns mid-turn instead of after the damage.
+  const canDeliver = event.kind === 'pre-tool' || (event.kind === 'stop' && !event.stopHookActive);
+  if (canDeliver && bounds.chatEnforcement === 'redact' && redacted) {
+    return {
+      reminder: 'redacted-chat-response',
+      offense: `Your previous message was redacted: ${redacted.breaches.join(', ')}.`,
+      clearsPending: true,
+    };
   }
 
   // A warning continues the conversation, which ends in another Stop. Without this it loops.
   if (event.kind === 'stop' && !event.stopHookActive && event.text) {
     const m = measure(event.text);
-    const found = shapeBreaches(m, bounds);
-    if (m.lines > bounds.responseLines) found.unshift(`${m.lines} lines (max ${bounds.responseLines})`);
+    const found = breaches(m, bounds, { lines: true });
     if (found.length === 0) return null;
     return {
       reminder: 'wordy-chat-response-reminder',
@@ -48,7 +54,7 @@ export function decide(event, bounds = loadBounds()) {
 
   if (event.kind === 'file-write' && event.filePath?.endsWith('.md')) {
     const m = measure(event.text);
-    const found = shapeBreaches(m, bounds);
+    const found = breaches(m, bounds);
     if (found.length === 0 && m.words <= bounds.documentWords) return null;
     const name = event.filePath.split('/').pop();
     const detail = found.length > 0 ? `: ${found.join(', ')}` : '';

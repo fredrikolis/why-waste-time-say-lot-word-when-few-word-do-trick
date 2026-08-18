@@ -1,12 +1,15 @@
-// Concern: normalizes a host's hook payload into the canonical Event, classifying which tool call is a file write | Non-concern: whether that write is worth a reminder | IO: (host json) -> Event
+// Concern: normalizes a host's hook payload into the canonical Event, its kind included | Non-concern: whether an Event is worth a reminder | IO: (host json) -> Event
 /**
- * @typedef {'session-start' | 'prompt' | 'stop' | 'file-write' | 'other'} EventKind
+ * @typedef {'session-start' | 'prompt' | 'stop' | 'file-write' | 'display' | 'pre-tool' | 'other'} EventKind
  * @typedef {{
  *   kind: EventKind,
  *   sessionId: string,
  *   text: string,
  *   filePath: string | null,
  *   stopHookActive: boolean,
+ *   messageId: string,
+ *   delta: string,
+ *   final: boolean,
  * }} Event
  */
 
@@ -37,6 +40,10 @@ function classify(raw) {
       return 'stop';
     case 'PostToolUse':
       return WRITE_TOOLS.has(raw.tool_name) ? 'file-write' : 'other';
+    case 'MessageDisplay':
+      return 'display';
+    case 'PreToolUse':
+      return 'pre-tool';
     default:
       throw new TypeError(`unknown hook_event_name: ${raw.hook_event_name}`);
   }
@@ -64,5 +71,8 @@ export function normalize(payload) {
           : (raw.prompt ?? ''),
     filePath: raw.tool_input?.file_path ?? null,
     stopHookActive: raw.stop_hook_active === true,
+    messageId: raw.message_id ?? '',
+    delta: raw.delta ?? '',
+    final: raw.final === true,
   };
 }

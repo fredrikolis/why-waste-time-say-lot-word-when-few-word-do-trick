@@ -1,4 +1,4 @@
-// Concern: speaks Claude Code's hook dialect, its output envelope and settings.json registration | Non-concern: which tool call is a file write (event.js) | IO: (text) -> envelope; (path) -> file
+// Concern: speaks Claude Code's hook dialect, its envelope, its settings.json registration, and whether a human reads | Non-concern: what earns a reminder | IO: (text, env) -> envelope; (path) -> file
 import { readFile, writeFile, copyFile, rename, mkdir, access } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -6,12 +6,34 @@ import { NAME } from '../tool.js';
 
 const COMMAND = `${NAME} remind claude`;
 
+/**
+ * Every hook this tool ever needs is registered, whatever the mode. Config decides what each
+ * one does, so changing a mode takes effect at once instead of leaving the settings file
+ * describing a mode the user has since moved off.
+ */
+export const registrationsFor = () => [...REGISTRATIONS];
+
 /** @type {{ event: string, matcher: string | null }[]} */
 const REGISTRATIONS = [
   { event: 'SessionStart', matcher: 'startup|resume|clear|compact' },
   { event: 'Stop', matcher: null },
   { event: 'PostToolUse', matcher: 'Write|Edit' },
+  // Both are inert unless chatEnforcement is redact: MessageDisplay leaves the delta alone and
+  // PreToolUse has nothing pending to deliver.
+  { event: 'MessageDisplay', matcher: null },
+  { event: 'PreToolUse', matcher: null },
 ];
+
+/**
+ * Programmatic entrypoints, where the message IS the output and no human is reading it. Named
+ * as a denylist: an allowlist silently disables the tool in vscode, jetbrains and the desktop
+ * app, which are every bit as interactive as a terminal.
+ */
+const PROGRAMMATIC = new Set(['sdk-cli', 'sdk-ts', 'sdk-py', 'mcp', 'bench']);
+
+export function isInteractive() {
+  return !PROGRAMMATIC.has(process.env.CLAUDE_CODE_ENTRYPOINT ?? 'cli');
+}
 
 export function settingsPath() {
   return join(homedir(), '.claude', 'settings.json');
@@ -29,9 +51,18 @@ export function envelope(text, event) {
     stop: 'Stop',
     'file-write': 'PostToolUse',
     other: 'PostToolUse',
+    display: 'MessageDisplay',
+    'pre-tool': 'PreToolUse',
   };
   return JSON.stringify({
     hookSpecificOutput: { hookEventName: names[event.kind], additionalContext: text },
+  });
+}
+
+/** @param {string} text */
+export function displayEnvelope(text) {
+  return JSON.stringify({
+    hookSpecificOutput: { hookEventName: 'MessageDisplay', displayContent: text },
   });
 }
 
@@ -86,22 +117,35 @@ async function readSettings(path) {
 /**
  * @param {string} path
  * @param {string} stamp
+ * @param {{ event: string, matcher: string | null }[]} wanted
  * @returns {Promise<{ path: string, backup: string | null, events: string[] }>}
  */
-export async function install(path, stamp) {
+export async function install(path, stamp, wanted = REGISTRATIONS) {
   await mkdir(dirname(path), { recursive: true });
   const present = await exists(path);
   const settings = present ? await readSettings(path) : {};
   const backup = present ? await backUp(path, stamp) : null;
 
   settings.hooks ??= {};
-  for (const { event, matcher } of REGISTRATIONS) {
+
+  // Strip ours from every event that holds one: an install that no longer wants an event must
+  // remove it, not leave the last install's registration behind firing on a mode nobody asked
+  // for. Events this tool never touched are left exactly as they are, malformed or not.
+  for (const event of Object.keys(settings.hooks)) {
+    if (!Array.isArray(settings.hooks[event])) continue;
+    const kept = withoutOurs(settings.hooks[event]);
+    if (kept.length === settings.hooks[event].length) continue;
+    if (kept.length > 0) settings.hooks[event] = kept;
+    else delete settings.hooks[event];
+  }
+
+  for (const { event, matcher } of wanted) {
     const entry = { ...(matcher ? { matcher } : {}), hooks: [{ type: 'command', command: COMMAND }] };
-    settings.hooks[event] = [...withoutOurs(settings.hooks[event] ?? []), entry];
+    settings.hooks[event] = [...(settings.hooks[event] ?? []), entry];
   }
 
   await writeAtomic(settings, path);
-  return { path, backup, events: REGISTRATIONS.map((r) => r.event) };
+  return { path, backup, events: wanted.map((r) => r.event) };
 }
 
 /**

@@ -1,4 +1,4 @@
-<!-- Concern: sells the tool and shows how to install it | Non-concern: the rule text, the flag surface, and the bounds | IO: none -->
+<!-- Concern: sells the tool, and shows how to install and configure it | Non-concern: the rule text, and the whole flag surface --help owns | IO: none -->
 
 ![why-waste-time-say-lot-word-when-few-word-do-trick](https://i.giphy.com/DMNPDvtGTD9WLK2Xxa.webp)
 
@@ -40,5 +40,30 @@ why-waste-time-say-lot-word-when-few-word-do-trick install-agent-hook claude
 
 Nothing else. Silent while the agent behaves.
 
-Bounds are configurable. `uninstall-agent-hook claude --confirm` backs it out.
-Run `why-waste-time-say-lot-word-when-few-word-do-trick --help` for the whole surface.
+## Enforcement
+
+Warnings by default. Under `redact`, an over-long chat response never reaches you:
+
+- You see a notice naming the counts that broke.
+- The agent is told to rewrite it, once per session.
+- The agent cannot bypass this. It does not control what is drawn.
+
+```bash
+why-waste-time-say-lot-word-when-few-word-do-trick configure --chat-enforcement redact
+```
+
+**Redaction costs streaming.** Nothing shows until a message is complete and measured.
+
+It applies to interactive sessions only, never to `claude -p`, and never to file writes.
+
+## Configuration
+
+```bash
+why-waste-time-say-lot-word-when-few-word-do-trick configure --response-lines 25
+why-waste-time-say-lot-word-when-few-word-do-trick configure
+```
+
+Only your overrides are stored. Defaults you never set track future releases.
+
+`uninstall-agent-hook claude --confirm` removes the hooks. It leaves this config file in place.
+Run `--help` for the whole surface.

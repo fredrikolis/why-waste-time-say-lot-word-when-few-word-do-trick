@@ -1,5 +1,7 @@
 <!-- Concern: how to fix a document the counters found wordy | Non-concern: chat response length, and the counts themselves | IO: none -->
 
+Think exhaustively. Report minimally.
+
 Delete, do not reformat. A restructured wall of text is still a wall.
 
 - Cut sections the reader can derive, look up, or skip.

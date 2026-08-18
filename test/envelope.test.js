@@ -6,7 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { NAME } from '../src/tool.js';
 
 // Bounds must come from the defaults, never from whatever config this machine happens to carry.
-const env = { ...process.env, [`${NAME.toUpperCase().replace(/-/g, '_')}_CONFIG`]: '/nonexistent/lwp-test.json' };
+// Both are stated, never inherited: CI has no Claude Code environment to borrow them from.
+const env = {
+  ...process.env,
+  [`${NAME.toUpperCase().replace(/-/g, '_')}_CONFIG`]: '/nonexistent/lwp-test.json',
+  CLAUDE_CODE_ENTRYPOINT: 'cli',
+};
 
 const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 

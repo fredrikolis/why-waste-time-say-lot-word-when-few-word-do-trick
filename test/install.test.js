@@ -48,10 +48,11 @@ test('a second install never overwrites the first backup', async () => {
 
 test('uninstall removes only our entries', async () => {
   const path = settingsFile(JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'other' }] }] } }));
-  await install(path, 'a');
+  const { events } = await install(path, 'a');
   const { removed } = await uninstall(path, 'b');
 
-  assert.equal(removed, 3);
+  // Derived, not hardcoded: adding a registration must not silently un-freeze this.
+  assert.equal(removed, events.length);
   assert.equal(read(path).hooks.Stop.length, 1);
   assert.equal(read(path).hooks.Stop[0].hooks[0].command, 'other');
 });
