@@ -5,6 +5,7 @@ git agent-verdict --require-version 1.13
 
 git agent-verdict "$1" core --model opus \
   --standard programming --standard testing --standard cli \
+  --rule "toolEnforcement and --tool-enforcement are a deliberate paired surface with chatEnforcement, held at one legal value because a file write cannot be redacted once it has happened. Removing them as unused is a regression, not a simplification" \
   --rule "detection counts and nothing else: no word lists, no phrase lists, no style regex, no heuristic scoring prose quality. A diff adding one moves away from this. Judgment belongs in rules/*.md, which the agent reads; the counters only choose when to deliver it" \
   --path .
 
