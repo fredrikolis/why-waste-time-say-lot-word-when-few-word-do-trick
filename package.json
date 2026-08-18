@@ -16,7 +16,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "check": "tsc --noEmit",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check ."
