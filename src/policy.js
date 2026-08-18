@@ -44,7 +44,7 @@ export function decide(event, bounds = loadBounds(), redacted = null, interactiv
   // A warning continues the conversation, which ends in another Stop. Without this it loops.
   if (event.kind === 'stop' && !event.stopHookActive && event.text) {
     const m = measure(event.text);
-    const found = breaches(m, bounds, { lines: true });
+    const found = breaches(m, bounds, 'chat');
     if (found.length === 0) return null;
     return {
       reminder: 'wordy-chat-response-reminder',
@@ -54,13 +54,11 @@ export function decide(event, bounds = loadBounds(), redacted = null, interactiv
 
   if (event.kind === 'file-write' && event.filePath?.endsWith('.md')) {
     const m = measure(event.text);
-    const found = breaches(m, bounds);
-    if (found.length === 0 && m.words <= bounds.documentWords) return null;
-    const name = event.filePath.split('/').pop();
-    const detail = found.length > 0 ? `: ${found.join(', ')}` : '';
+    const found = breaches(m, bounds, 'tool');
+    if (found.length === 0) return null;
     return {
       reminder: 'wordy-tool-call-reminder',
-      offense: `You wrote ${m.words} words to ${name}${detail}.`,
+      offense: `You wrote ${event.filePath.split('/').pop()}: ${found.join(', ')}.`,
     };
   }
 

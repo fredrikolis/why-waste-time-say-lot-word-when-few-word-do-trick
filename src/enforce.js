@@ -79,7 +79,7 @@ export async function display(event, bounds, interactive = true) {
   // Measured on every delta, not at `final`: the breach is real the moment the words are
   // written, and the record has to exist before the next hook that could deliver it.
   const soFar = await readFile(buffer, 'utf8');
-  const over = breaches(measure(soFar), bounds, { lines: true });
+  const over = breaches(measure(soFar), bounds, 'chat');
   // Every offence records, so every offence bites. Delivery is what clears it.
   if (over.length > 0) await markRedacted(event.sessionId, { breaches: over });
 

@@ -6,7 +6,7 @@ import { decide, BASELINE } from '../src/policy.js';
 import { render } from '../src/render.js';
 import { hostFor, AGENTS } from '../src/hosts/index.js';
 import { display, pending, clearPending } from '../src/enforce.js';
-import { bounds, save, parseFields, describe, configPath, DEFAULTS, FLAGS, BadValue } from '../src/config.js';
+import { bounds, save, parseFields, describe, configPath, flagHelp, FLAGS, BadValue } from '../src/config.js';
 import { NAME } from '../src/tool.js';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
@@ -36,14 +36,7 @@ AGENTS:
 FLAGS:
   --settings <path>         Settings file to edit, for a repo-local install.
                             Defaults to the agent's own global settings file.
-  --paragraph-words <n>     Bound on the longest paragraph
-  --prose-run-words <n>     Bound on the longest unbroken prose run
-  --response-lines <n>      Bound on a chat response
-  --document-words <n>      Words in a markdown write that earn a reminder
-  --chat-enforcement <mode> warn, or redact to withhold an over-long response
-                            entirely. redact costs streaming. Takes effect at
-                            once; no reinstall.
-  --tool-enforcement <mode> warn only
+${flagHelp()}
   --confirm                 Apply a change 'uninstall-agent-hook' would otherwise
                             only preview
   --version, -V             Version as JSON
@@ -52,7 +45,7 @@ FLAGS:
 EXAMPLES:
   ${NAME} install-agent-hook claude
   ${NAME} install-agent-hook claude --settings .claude/settings.json
-  ${NAME} configure --response-lines 25
+  ${NAME} configure --max-chat-lines 25
   ${NAME} configure
   ${NAME} uninstall-agent-hook claude
   ${NAME} uninstall-agent-hook claude --confirm
@@ -67,9 +60,6 @@ OUTPUT:
 
 CONFIG:
   ${configPath()}
-${Object.entries(DEFAULTS)
-  .map(([k, v]) => `  ${k.padEnd(24)}  default ${v}`)
-  .join('\n')}
 
 ENVIRONMENT:
   ${NAME.toUpperCase().replace(/-/g, '_')}_CONFIG

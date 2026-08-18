@@ -12,7 +12,7 @@ const CLI = fileURLToPath(new URL('../bin/cli.js', import.meta.url));
 /** @param {'warn' | 'redact'} mode */
 function envFor(mode) {
   const config = join(mkdtempSync(join(tmpdir(), 'wwt-cfg-')), 'config.json');
-  writeFileSync(config, JSON.stringify({ chatEnforcement: mode, responseLines: 50 }));
+  writeFileSync(config, JSON.stringify({ chatEnforcement: mode, maxChatLines: 50 }));
   return {
     ...process.env,
     WHY_WASTE_TIME_SAY_LOT_WORD_WHEN_FEW_WORD_DO_TRICK_CONFIG: config,

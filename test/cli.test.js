@@ -59,28 +59,28 @@ test('configure reports every field, its flag, and what it accepts', () => {
   const chat = out.data.fields.chatEnforcement;
   assert.equal(chat.flag, '--chat-enforcement');
   assert.deepEqual(chat.accepts, ['warn', 'redact']);
-  assert.equal(chat.default, 'warn');
+  assert.equal(chat.default, 'redact');
 });
 
 test('configure stores an override and reports it as in force', () => {
   const out = JSON.parse(
-    execFileSync(CLI, ['configure', '--response-lines', '25', '--chat-enforcement', 'redact'], {
+    execFileSync(CLI, ['configure', '--max-chat-lines', '25', '--chat-enforcement', 'redact'], {
       encoding: 'utf8',
       env: freshEnv(),
     }),
   );
-  assert.equal(out.data.fields.responseLines.value, 25);
-  assert.equal(out.data.fields.responseLines.overridden, true);
+  assert.equal(out.data.fields.maxChatLines.value, 25);
+  assert.equal(out.data.fields.maxChatLines.overridden, true);
   assert.equal(out.data.fields.chatEnforcement.value, 'redact');
 });
 
 test('configure refuses a bad value as validation, and an unknown option as usage', () => {
   /** @type {[string[], number, string][]} */
   const cases = [
-    [['configure', '--response-lines', '0'], 3, 'validation_error'],
+    [['configure', '--max-chat-lines', '0'], 3, 'validation_error'],
     [['configure', '--chat-enforcement', 'bogus'], 3, 'validation_error'],
     [['configure', '--tool-enforcement', 'redact'], 3, 'validation_error'],
-    [['configure', '--response-line', '25'], 2, 'bad_arguments'],
+    [['configure', '--max-chat-line', '25'], 2, 'bad_arguments'],
   ];
   for (const [args, status, code] of cases) {
     try {

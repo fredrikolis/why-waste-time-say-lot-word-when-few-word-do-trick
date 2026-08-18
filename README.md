@@ -32,7 +32,8 @@ like me to elaborate on any part of this!
 npm i -g why-waste-time-say-lot-word-when-few-word-do-trick
 ```
 
-Configure limits and make it auto-redact long chat output 
+Configure limits and make it auto-redact long chat output
+
 ```bash
 why-waste-time-say-lot-word-when-few-word-do-trick configure --max-chat-lines 25
 why-waste-time-say-lot-word-when-few-word-do-trick configure --max-chat-paragraph-words 50
@@ -40,20 +41,18 @@ why-waste-time-say-lot-word-when-few-word-do-trick configure --chat-enforcement 
 ```
 
 Install Claude hooks (modifies ~/.claude/settings.json)
+
 ```bash
 why-waste-time-say-lot-word-when-few-word-do-trick install-agent-hook claude
 ```
-
 
 ## What the installed hook does
 
 1. Tells the agent to communicate concisely at SessionStart (and PostCompaction)
 2. Auto-rejects long chat responses, forcing the agent to try again.
 3. Warns the agent if it writes lengthy Markdown prose
- 
+
 Nothing else. Silent while the agent behaves.
-
-
 
 `uninstall-agent-hook claude --confirm` removes the hooks. It leaves this config file in place.
 Run `--help` for the whole surface.

@@ -1,4 +1,4 @@
-// Concern: the bounds a measurement is judged against, and reading and writing the file that overrides them | Non-concern: taking any measurement | IO: (config path) -> Bounds; edited file
+// Concern: the bounds a measurement is judged against, the flags that set them, and the file that stores them | Non-concern: taking any measurement | IO: (config path) -> Bounds; edited file
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -7,10 +7,10 @@ import { NAME } from './tool.js';
 /**
  * @typedef {'warn' | 'redact'} Enforcement
  * @typedef {{
- *   paragraphWords: number,
- *   proseRunWords: number,
- *   responseLines: number,
- *   documentWords: number,
+ *   maxChatLines: number,
+ *   maxChatParagraphWords: number,
+ *   maxToolLines: number,
+ *   maxToolParagraphWords: number,
  *   chatEnforcement: Enforcement,
  *   toolEnforcement: Enforcement,
  * }} Bounds
@@ -18,11 +18,13 @@ import { NAME } from './tool.js';
 
 /** @type {Bounds} */
 export const DEFAULTS = {
-  paragraphWords: 70,
-  proseRunWords: 200,
-  responseLines: 50,
-  documentWords: 400,
-  chatEnforcement: 'warn',
+  maxChatLines: 50,
+  maxChatParagraphWords: 70,
+  // Documents legitimately run long, so the line bound is looser; density is not.
+  maxToolLines: 400,
+  maxToolParagraphWords: 70,
+  // Redaction is the point of the tool: a warning the agent can ignore is what it replaces.
+  chatEnforcement: 'redact',
   // Paired with chatEnforcement so both surfaces are declared, and held at one value on
   // purpose: a file write cannot be redacted, because the write already happened. It is the
   // seam where per-surface levels land, so it is not dead config to delete.
@@ -46,7 +48,12 @@ export function configPath() {
 export function bounds(path = configPath()) {
   if (!existsSync(path)) return { ...DEFAULTS };
   try {
-    return { ...DEFAULTS, ...JSON.parse(readFileSync(path, 'utf8')) };
+    const stored = JSON.parse(readFileSync(path, 'utf8'));
+    for (const key of Object.keys(stored)) {
+      if (key in DEFAULTS) continue;
+      process.stderr.write(`${NAME}: ${path} sets an unknown key "${key}", which is ignored\n`);
+    }
+    return { ...DEFAULTS, ...stored };
   } catch (cause) {
     const why = cause instanceof Error ? cause.message : String(cause);
     process.stderr.write(`${NAME}: ignoring unreadable config ${path}: ${why}\n`);
@@ -90,16 +97,26 @@ export class BadValue extends Error {}
 
 /** The flag a user types for each key, and what that key accepts. */
 const FIELDS = {
-  '--paragraph-words': { key: 'paragraphWords', accepts: COUNT },
-  '--prose-run-words': { key: 'proseRunWords', accepts: COUNT },
-  '--response-lines': { key: 'responseLines', accepts: COUNT },
-  '--document-words': { key: 'documentWords', accepts: COUNT },
+  '--max-chat-lines': { key: 'maxChatLines', accepts: COUNT },
+  '--max-chat-paragraph-words': { key: 'maxChatParagraphWords', accepts: COUNT },
+  '--max-tool-lines': { key: 'maxToolLines', accepts: COUNT },
+  '--max-tool-paragraph-words': { key: 'maxToolParagraphWords', accepts: COUNT },
   '--chat-enforcement': { key: 'chatEnforcement', accepts: ['warn', 'redact'] },
   // One legal value today. See DEFAULTS for why the surface exists anyway.
   '--tool-enforcement': { key: 'toolEnforcement', accepts: ['warn'] },
 };
 
 export const FLAGS = Object.keys(FIELDS);
+
+/** Rendered into --help, so a renamed field can never leave a stale flag behind. */
+export const flagHelp = () =>
+  Object.entries(FIELDS)
+    .map(([flag, { key, accepts }]) => {
+      const takes = Array.isArray(accepts) ? `<${accepts.join('|')}>` : '<n>';
+      const shown = `  ${flag} ${takes}`.padEnd(38);
+      return `${shown}default ${DEFAULTS[/** @type {keyof Bounds} */ (key)]}`;
+    })
+    .join('\n');
 
 /**
  * @param {Record<string, string>} flags
